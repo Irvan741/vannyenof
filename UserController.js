@@ -122,10 +122,15 @@ export const updateUser = async(req, res) => {
   try{
     const idValid = await db.user.findFirst({where: {uuid: id}})
     if(!idValid) return response.custom(res, {code: 404, message: "Failed to update data user. invalid id user."})
-    const user = userSchema.parse(req.body)
+    const {password,...UserData } = userSchema.parse(req.body);
+
+    // const user = userSchema.parse(req.body)
     const update = await db.user.update({
       where: {uuid : id},
-      data: user
+      data: {
+        ...UserData,
+        password: hashedPassword,
+      }
     })
 
     response.success(res, {
