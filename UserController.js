@@ -9,8 +9,8 @@ const userSchema = z.object({
     nik: z.string().length(16),
     username: z.string(),
     password: z.string(),
-    createdAt: z.string().datetime({ message: "Invalid datetime string! Must be UTC." }),
-    updatedAt: z.string().datetime({ message: "Invalid datetime string! Must be UTC." }),
+    createdAt: z.string().datetime({ message: "Invalid datetime string! Must be UTC." }).optional(),
+    updatedAt: z.string().datetime({ message: "Invalid datetime string! Must be UTC." }).optional(),
     alamat: z.string(),
     kecamatan: z.string().length(7),
     kelurahan: z.string().length(10),
@@ -85,6 +85,8 @@ export const getByIdUsers = async(req, res) => {
 export const createUser = async (req, res) => {
   try{
     const {password,...UserData } = userSchema.parse(req.body);
+    console.log(req.body);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const create = await  db.user.create({
       data: {
@@ -112,6 +114,41 @@ export const createUser = async (req, res) => {
           description: "Failed to create data User."
         });
       }
+  }
+}
+
+export const updateUser = async(req, res) => {
+  const {id} = req.params
+  try{
+    const idValid = await db.user.findFirst({where: {uuid: id}})
+    if(!idValid) return response.custom(res, {code: 404, message: "Failed to update data user. invalid id user."})
+    const user = userSchema.parse(req.body)
+    const update = await db.user.update({
+      where: {uuid : id},
+      data: user
+    })
+
+    response.success(res, {
+      code: 200,
+      length: 1,
+      data: update,
+      message: `Data user updated succesfully.`
+    })
+  }catch(e){
+    if (e instanceof z.ZodError) {
+      response.error(res, {
+        code: 406,
+        message: e.errors,
+        description: `Input tidak valid.`,
+        detail: `${e.errors[0].path[0]} -> ${e.errors[0].message}.`
+      });
+    } else {
+      response.error(res, {
+        code: 400,
+        message: e.message,
+        description: "Failed to update data user."
+      });
+    }
   }
 }
 
